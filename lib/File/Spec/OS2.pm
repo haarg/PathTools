@@ -3,9 +3,10 @@ package File::Spec::OS2;
 use strict;
 use vars qw(@ISA $VERSION);
 require File::Spec::Unix;
-@ISA = qw(File::Spec::Unix);
 
-$VERSION = 1.0;
+$VERSION = '1.1';
+
+@ISA = qw(File::Spec::Unix);
 
 sub devnull {
     return "/dev/nul";
@@ -32,7 +33,15 @@ my $tmpdir;
 sub tmpdir {
     return $tmpdir if defined $tmpdir;
     my $self = shift;
-    foreach (@ENV{qw(TMPDIR TEMP TMP)}, qw(/tmp /)) {
+    my @dirlist = ( @ENV{qw(TMPDIR TEMP TMP)}, qw(/tmp /) );
+    {
+	no strict 'refs';
+	if (${"\cTAINT"}) { # Check for taint mode on perl >= 5.8.0
+	    require Scalar::Util;
+	    @dirlist = grep { ! Scalar::Util::tainted $_ } @dirlist;
+	}
+    }
+    foreach (@dirlist) {
 	next unless defined && -d;
 	$tmpdir = $_;
 	last;
